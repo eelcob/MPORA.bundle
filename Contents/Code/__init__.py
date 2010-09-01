@@ -36,11 +36,11 @@ def MainMenuVideo():
   dir = MediaContainer(mediaType='video')
   dir.Append(Function(DirectoryItem(Sports, title="Sport Channels", thumb=R(ICON))))
   dir.Append(Function(DirectoryItem(HotVideos, title="Popular Videos", thumb=R(ICON))))
-  dir.Append(Function(DirectoryItem(PaginatedVideos, title="Featured Videos", thumb=R(ICON)), path="all/featured"))
-  dir.Append(Function(DirectoryItem(PaginatedVideos, title="Recently Added", thumb=R(ICON)), path="all/recent"))
-  dir.Append(Function(DirectoryItem(PaginatedVideos, title="High Def Videos", thumb=R(ICON)), path="all/hd"))
-  dir.Append(Function(DirectoryItem(BrandChannels, title="Brand Channels", thumb=R(ICON)), path="all"))
-  dir.Append(Function(DirectoryItem(PaginatedVideos, title="Brand Videos", thumb=R(ICON)), path="all/brands"))
+  dir.Append(Function(DirectoryItem(PaginatedVideos, title="Featured Videos", thumb=R(ICON)), pagePath="all/featured"))
+  dir.Append(Function(DirectoryItem(PaginatedVideos, title="Recently Added", thumb=R(ICON)), pagePath="all/recent"))
+  dir.Append(Function(DirectoryItem(PaginatedVideos, title="High Def Videos", thumb=R(ICON)), pagePath="all/hd"))
+  dir.Append(Function(DirectoryItem(BrandChannels, title="Brand Channels", thumb=R(ICON)), pagePath="all"))
+  dir.Append(Function(DirectoryItem(PaginatedVideos, title="Brand Videos", thumb=R(ICON)), pagePath="all/brands"))
   dir.Append(Function(SearchDirectoryItem(Search, title=L("Search..."), prompt=L("Search for Videos"), thumb=R('search.png'))))
   dir.Append(PrefsItem(L("Preferences..."), thumb=R('icon-prefs.png')))
   return dir
@@ -48,15 +48,15 @@ def MainMenuVideo():
 #########################################################
 def MainMenuPictures():
   dir = MediaContainer(mediaType='pictures')
-  dir.Append(Function(DirectoryItem(Photos, title="Featured Photos"), path='all/featured'))
-  dir.Append(Function(DirectoryItem(Photos, title="Popular Photos"), path='all/popular'))
+  dir.Append(Function(DirectoryItem(Photos, title="Featured Photos"), pagePath='all/featured'))
+  dir.Append(Function(DirectoryItem(Photos, title="Popular Photos"), pagePath='all/popular'))
   AddSportsChannels(dir, video=False)
   return dir
 
 #######################################################################  
 def Search(sender, query):
-  path = 'search/'+query+'/relevance'
-  return PaginatedVideos(sender, path, increment=21)
+  pagePath = 'search/'+query+'/relevance'
+  return PaginatedVideos(sender, pagePath, increment=21)
   
 def CreatePrefs():
   Prefs.Add(id=USE_HD_PREF_KEY, type='bool', default=True, label='Display in High Def if available')
@@ -81,47 +81,47 @@ def Sports(sender):
   
 ##########################################################
 def AddSportsChannels(dir, video=True):
-  dir.Append(Function(DirectoryItem(SportChannel, title="MTB", thumb=R(ICON)), path='mountainbiking', video=video))
-  dir.Append(Function(DirectoryItem(SportChannel, title="Snowboard", thumb=R(ICON)), path='snowboarding', video=video))
-  dir.Append(Function(DirectoryItem(SportChannel, title="Surf", thumb=R(ICON)), path='surfing', video=video))
-  dir.Append(Function(DirectoryItem(SportChannel, title="Skate", thumb=R(ICON)), path='skateboarding', video=video))
-  dir.Append(Function(DirectoryItem(SportChannel, title="BMX", thumb=R(ICON)), path='bmx', video=video))
-  dir.Append(Function(DirectoryItem(SportChannel, title="Moto", thumb=R(ICON)), path='motocross', video=video))
-  dir.Append(Function(DirectoryItem(SportChannel, title="Ski", thumb=R(ICON)), path='skiing', video=video))
-  dir.Append(Function(DirectoryItem(SportChannel, title="Wake", thumb=R(ICON)), path='wakeboarding', video=video))
-  dir.Append(Function(DirectoryItem(SportChannel, title="Outdoor", thumb=R(ICON)), path='outdoor', video=video))
+  dir.Append(Function(DirectoryItem(SportChannel, title="MTB", thumb=R(ICON)), pagePath='mountainbiking', video=video))
+  dir.Append(Function(DirectoryItem(SportChannel, title="Snowboard", thumb=R(ICON)), pagePath='snowboarding', video=video))
+  dir.Append(Function(DirectoryItem(SportChannel, title="Surf", thumb=R(ICON)), pagePath='surfing', video=video))
+  dir.Append(Function(DirectoryItem(SportChannel, title="Skate", thumb=R(ICON)), pagePath='skateboarding', video=video))
+  dir.Append(Function(DirectoryItem(SportChannel, title="BMX", thumb=R(ICON)), pagePath='bmx', video=video))
+  dir.Append(Function(DirectoryItem(SportChannel, title="Moto", thumb=R(ICON)), pagePath='motocross', video=video))
+  dir.Append(Function(DirectoryItem(SportChannel, title="Ski", thumb=R(ICON)), pagePath='skiing', video=video))
+  dir.Append(Function(DirectoryItem(SportChannel, title="Wake", thumb=R(ICON)), pagePath='wakeboarding', video=video))
+  dir.Append(Function(DirectoryItem(SportChannel, title="Outdoor", thumb=R(ICON)), pagePath='outdoor', video=video))
   
 ############################################################
-def SportChannel(sender, path, video=True):
+def SportChannel(sender, pagePath, video=True):
   dir = MediaContainer(title2=sender.itemTitle)
   if(video):
-    dir.Append(Function(DirectoryItem(HotVideos, title="Popular Videos", thumb=R(ICON)), url=MPORA_URL+path))
-    dir.Append(Function(DirectoryItem(PaginatedVideos, title="Featured Videos", thumb=R(ICON)), path=path+"/featured"))
-    dir.Append(Function(DirectoryItem(PaginatedVideos, title="Recently Added", thumb=R(ICON)), path=path+"/recent"))
-    dir.Append(Function(DirectoryItem(PaginatedVideos, title="High Def Videos", thumb=R(ICON)), path=path+"/hd"))
-    #dir.Append(Function(DirectoryItem(PaginatedMovies, title="Movies"), path=path+"/movies"))
-    dir.Append(Function(DirectoryItem(BrandChannels, title="Brand Channels", thumb=R(ICON)), path=path))
-    dir.Append(Function(DirectoryItem(PaginatedVideos, title="Brand Videos", thumb=R(ICON)), path=path+"/brands"))
+    dir.Append(Function(DirectoryItem(HotVideos, title="Popular Videos", thumb=R(ICON)), url=MPORA_URL+pagePath))
+    dir.Append(Function(DirectoryItem(PaginatedVideos, title="Featured Videos", thumb=R(ICON)), pagePath=pagePath+"/featured"))
+    dir.Append(Function(DirectoryItem(PaginatedVideos, title="Recently Added", thumb=R(ICON)), pagePath=pagePath+"/recent"))
+    dir.Append(Function(DirectoryItem(PaginatedVideos, title="High Def Videos", thumb=R(ICON)), pagePath=pagePath+"/hd"))
+    #dir.Append(Function(DirectoryItem(PaginatedMovies, title="Movies"), pagePath=pagePath+"/movies"))
+    dir.Append(Function(DirectoryItem(BrandChannels, title="Brand Channels", thumb=R(ICON)), pagePath=pagePath))
+    dir.Append(Function(DirectoryItem(PaginatedVideos, title="Brand Videos", thumb=R(ICON)), pagePath=pagePath+"/brands"))
   else:
-    dir.Append(Function(DirectoryItem(Photos, title="Featured Photos"), path=path+"/featured"))
-    dir.Append(Function(DirectoryItem(Photos, title="Popular Photos"), path=path+"/popular"))
+    dir.Append(Function(DirectoryItem(Photos, title="Featured Photos"), pagePath=pagePath+"/featured"))
+    dir.Append(Function(DirectoryItem(Photos, title="Popular Photos"), pagePath=pagePath+"/popular"))
   return dir
   
 #############################################################################
-def PaginatedVideos(sender, path, page=0, increment=20):
+def PaginatedVideos(sender, pagePath, page=0, increment=20):
   dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
   
   if(page == 0):
-    url = VIDEO_MPORA_URL % path 
+    url = VIDEO_MPORA_URL % pagePath 
   else:
-    url = PAGED_VIDEO_MPORA_URL % (path, page)
+    url = PAGED_VIDEO_MPORA_URL % (pagePath, page)
   for item in XML.ElementFromURL(url, True, errors='ignore').xpath('//div[@class="contentBox double featured"]/div/ul/li/a'):
     if(item.xpath('img')):
       videoUrl = item.get('href')
       VideoItemExtraction(dir, videoUrl)
   for item in XML.ElementFromURL(url,True, errors='ignore').xpath('//ul[@class="pagination"]/li/a'):
     if(item.text.startswith('Next')):
-      dir.Append(Function(DirectoryItem(PaginatedVideos, title="More...", thumb=R(ICON)), path=path, page=page+increment))
+      dir.Append(Function(DirectoryItem(PaginatedVideos, title="More...", thumb=R(ICON)), pagePath=pagePath, page=page+increment))
       break
   return dir
   
@@ -130,24 +130,24 @@ def PaginatedVideos(sender, path, page=0, increment=20):
 #       The movie links don't work on the site (18/6) and don't work directly, so leave alone for
 #       now
 #
-def PaginatedMovies(sender, path, page=0):
+def PaginatedMovies(sender, pagePath, page=0):
   dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
   if(page == 0):
-    url = VIDEO_MPORA_URL % path
+    url = VIDEO_MPORA_URL % pagePath
   else:
-    url = PAGED_VIDEO_MPORA_URL % (path, page)
+    url = PAGED_VIDEO_MPORA_URL % (pagePath, page)
   for item in XML.ElementFromURL(url,True, errors='ignore').xpath('//div[@class="contentBox triple large"]/div/ul/li/a'):
     if(item.xpath('img')):
       videoUrl = item.get('href')
       dir.Append(MovieItem(videoUrl))
       
-  dir.Append(Function(DirectoryItem(PaginatedMovies, title="More..."), path=path, page=page+20))
+  dir.Append(Function(DirectoryItem(PaginatedMovies, title="More..."), pagePath=pagePath, page=page+20))
   return dir
 
 #########################################################
-def BrandChannels(sender, path):
+def BrandChannels(sender, pagePath):
   dir = MediaContainer(title2=sender.itemTitle)
-  url = "http://mpora.com/%s/brands" % path
+  url = "http://mpora.com/%s/brands" % pagePath
   for item in XML.ElementFromURL(url,True, errors='ignore').xpath('//div[@class="contentBox double featured proTeam"]/div/ul/li'):
     if(item.xpath("a/img")):
       title = item.xpath("a/span")[0].text
@@ -247,9 +247,9 @@ def PlayVideo(sender, pageUrl):
   return Redirect(videoUrl)
 
 #########################################################
-def Photos(sender, path):
+def Photos(sender, pagePath):
   dir = MediaContainer(viewGroup='Photos', title2=sender.itemTitle)
-  url = PHOTO_MPORA_URL % path
+  url = PHOTO_MPORA_URL % pagePath
   for item in XML.ElementFromURL(url,True, errors='ignore').xpath('//div[@class="contentBox many"]/div/ul/li/a'):
     if(item.xpath('img')):
       title = item.get('title')
