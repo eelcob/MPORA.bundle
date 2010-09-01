@@ -66,7 +66,7 @@ def HotVideos(sender, url=MPORA_URL):
   dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
   Log("URL:"+url)
   for item in XML.ElementFromURL(url, True, errors='ignore').xpath('//div[@id="top10ContentContainer"]/ul/li'):
-    pageUrl = item.xpath(".//div[@class='top10title']/a")[0].get('href')
+    pageUrl = item.xpath(".//a[@class='top10title']")[0].get('href')
     Log("PageURL:"+pageUrl)
     if(pageUrl.find("http://video.mpora.com") != -1):
         VideoItemExtraction(dir, pageUrl)
@@ -150,10 +150,11 @@ def BrandChannels(sender, path):
   url = "http://mpora.com/%s/brands" % path
   for item in XML.ElementFromURL(url,True, errors='ignore').xpath('//div[@class="contentBox double featured proTeam"]/div/ul/li'):
     if(item.xpath("a/img")):
-      title = item.xpath("h3/a")[0].text
+      title = item.xpath("a/span")[0].text
       thumb = item.xpath("a/img")[0].get('src') + "#index.jpg"
-      brand = item.xpath("h3/a")[0].get('href')
-      dir.Append(Function(DirectoryItem(BrandChannel, title=title, thumb=thumb), brand=brand))
+      brand = item.xpath("a")[0].get('href')
+      if title and len(title) > 0:
+        dir.Append(Function(DirectoryItem(BrandChannel, title=title, thumb=thumb), brand=brand))
   return dir
   
 ########################################################
@@ -164,8 +165,8 @@ def BrandChannel(sender, brand, page=0):
   else:
     url = "http://mpora.com%svideos/%d" % (brand, page)
   
-  for item in XML.ElementFromURL(url,True, errors='ignore').xpath('//div[@class="contentBox triple sixteenNine large"]/div/ul/li/a'):
-    if(item.xpath('img')):
+  for item in XML.ElementFromURL(url,True, errors='ignore').xpath('//div[@class="contentBox sectionTop tagsTop"]/div/ul/li/a'):
+    if(item.get('type') == 'video'):
       videoUrl = item.get('href')
       VideoItemExtraction(dir, videoUrl)
   for item in XML.ElementFromURL(url,True, errors='ignore').xpath('//ul[@class="pagination"]/li/a'):
