@@ -1,7 +1,4 @@
 import re, string, datetime
-from PMS import *
-from PMS.Objects import *
-from PMS.Shortcuts import *
 
 MPORA_VIDEO_PREFIX      = "/video/mpora"
 MPORA_PHOTO_PREFIX      = "/photos/mpora"
@@ -13,10 +10,10 @@ PAGED_VIDEO_MPORA_URL   = "http://video.mpora.com/%s/%d"
 VIDEO_DETAILS = "http://api.mpora.com/tv/player/load/vid/%s"
 
 PHOTO_MPORA_URL   = "http://photo.mpora.com/%s"
-ORIGINAL_PHOTO_URL = "http://cdn.static.mpora.com/photo/%s_o.jpg"
-SMALL_PHOTO_URL = "http://cdn.static.mpora.com/photo/%s_t.jpg"
+ORIGINAL_PHOTO_URL = "http://cdn1.static.mporatrons.com/photo/%s_o.jpg"
+SMALL_PHOTO_URL = "http://cdn1.static.mporatrons.com/photo/%s_t.jpg"
 CACHE_INTERVAL    = 1800
-USE_HD_PREF_KEY = "usehd"
+USE_HD_PREF_KEY = "hd"
 
 ICON = "icon-default.png"
 
@@ -41,7 +38,7 @@ def MainMenuVideo():
   dir.Append(Function(DirectoryItem(PaginatedVideos, title="High Def Videos", thumb=R(ICON)), pagePath="all/hd"))
   dir.Append(Function(DirectoryItem(BrandChannels, title="Brand Channels", thumb=R(ICON)), pagePath="all"))
   dir.Append(Function(DirectoryItem(PaginatedVideos, title="Brand Videos", thumb=R(ICON)), pagePath="all/brands"))
-  dir.Append(Function(SearchDirectoryItem(Search, title=L("Search..."), prompt=L("Search for Videos"), thumb=R('search.png'))))
+  dir.Append(Function(InputDirectoryItem(Search, title=L("Search..."), prompt=L("Search for Videos"), thumb=R('search.png'))))
   dir.Append(PrefsItem(L("Preferences..."), thumb=R('icon-prefs.png')))
   return dir
 
@@ -58,14 +55,11 @@ def Search(sender, query):
   pagePath = 'search/'+query+'/relevance'
   return PaginatedVideos(sender, pagePath, increment=21)
   
-def CreatePrefs():
-  Prefs.Add(id=USE_HD_PREF_KEY, type='bool', default=True, label='Display in High Def if available')
-  
 ###################################################
 def HotVideos(sender, url=MPORA_URL):
   dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
   Log("URL:"+url)
-  for item in XML.ElementFromURL(url, True, errors='ignore').xpath('//div[@id="top10ContentContainer"]/ul/li'):
+  for item in HTML.ElementFromURL(url, errors='ignore').xpath('//div[@id="top10ContentContainer"]/ul/li'):
     pageUrl = item.xpath(".//a[@class='top10title']")[0].get('href')
     Log("PageURL:"+pageUrl)
     if(pageUrl.find("http://video.mpora.com") != -1):
@@ -115,11 +109,11 @@ def PaginatedVideos(sender, pagePath, page=0, increment=20):
     url = VIDEO_MPORA_URL % pagePath 
   else:
     url = PAGED_VIDEO_MPORA_URL % (pagePath, page)
-  for item in XML.ElementFromURL(url, True, errors='ignore').xpath('//div[@class="contentBox double featured"]/div/ul/li/a'):
+  for item in HTML.ElementFromURL(url, errors='ignore').xpath('//div[@class="contentBox double featured"]/div/ul/li/a'):
     if(item.xpath('img')):
       videoUrl = item.get('href')
       VideoItemExtraction(dir, videoUrl)
-  for item in XML.ElementFromURL(url,True, errors='ignore').xpath('//ul[@class="pagination"]/li/a'):
+  for item in HTML.ElementFromURL(url, errors='ignore').xpath('//ul[@class="pagination"]/li/a'):
     if(item.text.startswith('Next')):
       dir.Append(Function(DirectoryItem(PaginatedVideos, title="More...", thumb=R(ICON)), pagePath=pagePath, page=page+increment))
       break
@@ -136,7 +130,7 @@ def PaginatedMovies(sender, pagePath, page=0):
     url = VIDEO_MPORA_URL % pagePath
   else:
     url = PAGED_VIDEO_MPORA_URL % (pagePath, page)
-  for item in XML.ElementFromURL(url,True, errors='ignore').xpath('//div[@class="contentBox triple large"]/div/ul/li/a'):
+  for item in HTML.ElementFromURL(url, errors='ignore').xpath('//div[@class="contentBox triple large"]/div/ul/li/a'):
     if(item.xpath('img')):
       videoUrl = item.get('href')
       dir.Append(MovieItem(videoUrl))
@@ -148,7 +142,7 @@ def PaginatedMovies(sender, pagePath, page=0):
 def BrandChannels(sender, pagePath):
   dir = MediaContainer(title2=sender.itemTitle)
   url = "http://mpora.com/%s/brands" % pagePath
-  for item in XML.ElementFromURL(url,True, errors='ignore').xpath('//div[@class="contentBox double featured proTeam"]/div/ul/li'):
+  for item in HTML.ElementFromURL(url, errors='ignore').xpath('//div[@class="contentBox double featured proTeam"]/div/ul/li'):
     if(item.xpath("a/img")):
       title = item.xpath("a/span")[0].text
       thumb = item.xpath("a/img")[0].get('src') + "#index.jpg"
@@ -165,11 +159,11 @@ def BrandChannel(sender, brand, page=0):
   else:
     url = "http://mpora.com%svideos/%d" % (brand, page)
   
-  for item in XML.ElementFromURL(url,True, errors='ignore').xpath('//div[@class="contentBox sectionTop tagsTop"]/div/ul/li/a'):
+  for item in HTML.ElementFromURL(url, errors='ignore').xpath('//div[@class="contentBox sectionTop tagsTop"]/div/ul/li/a'):
     if(item.get('type') == 'video'):
       videoUrl = item.get('href')
       VideoItemExtraction(dir, videoUrl)
-  for item in XML.ElementFromURL(url,True, errors='ignore').xpath('//ul[@class="pagination"]/li/a'):
+  for item in HTML.ElementFromURL(url, errors='ignore').xpath('//ul[@class="pagination"]/li/a'):
     if(item.text.startswith('Next')):
       dir.Append(Function(DirectoryItem(BrandChannel, title="More...", thumb=R(ICON)), brand=brand, page=page+10))
       break
@@ -188,23 +182,24 @@ def VideoItemExtraction(dir, pageUrl):
     subtitle = "High Def\n" 
   else:
     # If video is available in HD and user hasn't switched it off, then use it. 
-    hdAvailable = XML.ElementFromURL(pageUrl,True, errors='ignore').xpath('//h3[@class="definitionLink hd"]')
-    if(hdAvailable):
-      if(Prefs.Get(USE_HD_PREF_KEY)):
-        subtitle = "High Def\n"   
+    #hdAvailable = len(HTML.ElementFromURL(pageUrl, errors='ignore').xpath('//h3[@class="definitionLink hd"]')) > 0
+    #Log("HD Available:"+str(hdAvailable)+" from "+pageUrl)
+    #if(hdAvailable):
+    if(Prefs[USE_HD_PREF_KEY]):
+        #subtitle = "High Def\n"   
         pageUrl = pageUrl +"hd/"
   
-  title = XML.ElementFromURL(pageUrl,True, errors='ignore').xpath('//meta[@name="title"]')[0].get('content').strip()
-  summary = XML.ElementFromURL(pageUrl,True, errors='ignore').xpath('//meta[@name="description"]')[0].get('content').strip()
-  thumb = XML.ElementFromURL(pageUrl,True, errors='ignore').xpath('//link[@rel="image_src"]')[0].get('href').strip() + "#index.jpg"
+  title = HTML.ElementFromURL(pageUrl, errors='ignore').xpath('//meta[@name="title"]')[0].get('content').strip()
+  summary = HTML.ElementFromURL(pageUrl, errors='ignore').xpath('//meta[@name="description"]')[0].get('content').strip()
+  thumb = HTML.ElementFromURL(pageUrl, errors='ignore').xpath('//link[@rel="image_src"]')[0].get('href').strip() + "#index.jpg"
   duration = ExtractDuration(pageUrl)
   dir.Append(Function(VideoItem(PlayVideo, title=title, subtitle=subtitle, summary=summary, thumb=thumb, duration=duration), pageUrl=pageUrl))
   
 ####################################################
 # Extracts video duration in ms or None if 0 or not available
 def ExtractDuration(pageUrl):
-  titles = XML.ElementFromURL(pageUrl,True, errors='ignore').xpath('//div[@class="contentBox mainInfo"]/div/ul/li[@class="details"]/dl/dt')
-  defs = XML.ElementFromURL(pageUrl,True, errors='ignore').xpath('//div[@class="contentBox mainInfo"]/div/ul/li[@class="details"]/dl/dd')
+  titles = HTML.ElementFromURL(pageUrl, errors='ignore').xpath('//div[@class="contentBox mainInfo"]/div/ul/li[@class="details"]/dl/dt')
+  defs = HTML.ElementFromURL(pageUrl, errors='ignore').xpath('//div[@class="contentBox mainInfo"]/div/ul/li[@class="details"]/dl/dd')
   count = 0
   for title in titles:
     if(title.text.find('Time') > -1):
@@ -242,20 +237,22 @@ def PlayVideo(sender, pageUrl):
   rssPageUrl = VIDEO_DETAILS%key
   if(hd):
     rssPageUrl = rssPageUrl + "/hd/true"
-  rssUrl = XML.ElementFromURL(rssPageUrl,True, errors='ignore').xpath('//response/configuration/video')[0].get('url')
-  videoUrl = XML.ElementFromURL(rssUrl,True, errors='ignore').xpath('//rss/channel/item/enclosure')[0].get('url')
+  rssUrl = HTML.ElementFromURL(rssPageUrl, errors='ignore').xpath('//response/configuration/video')[0].get('url')
+  videoUrl = HTML.ElementFromURL(rssUrl, errors='ignore').xpath('//rss/channel/item/enclosure')[0].get('url')
   return Redirect(videoUrl)
 
 #########################################################
 def Photos(sender, pagePath):
   dir = MediaContainer(viewGroup='Photos', title2=sender.itemTitle)
   url = PHOTO_MPORA_URL % pagePath
-  for item in XML.ElementFromURL(url,True, errors='ignore').xpath('//div[@class="contentBox many"]/div/ul/li/a'):
-    if(item.xpath('img')):
-      title = item.get('title')
+  for item in HTML.ElementFromURL(url, errors='ignore').xpath('//div[@class="contentBox many"]//div[@class="photoItem"]/a'):
+    if(len(item.xpath('img')) > 0):
+      title = item.xpath('img')[0].get('alt')
       photoPageUrl = item.get('href')
-      index = photoPageUrl.rfind("/")
-      id = photoPageUrl[index+1:len(photoPageUrl)]
+      Log("Photo page URL:"+photoPageUrl)
+      id = photoPageUrl.replace("http://photo.mpora.com/photo/","").replace("/","")
+      #id = photoPageUrl[index+1:len(photoPageUrl)]
+      Log("Photo ID:"+id)
       photoUrl = ORIGINAL_PHOTO_URL % id
       thumb = SMALL_PHOTO_URL % id
       dir.Append(PhotoItem(photoUrl, title=title, Summary=None, thumb=thumb))

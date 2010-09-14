@@ -19,11 +19,15 @@
 	<key>PlexAudioCodec</key>
 	<string>AAC</string>
 	<key>PlexClientPlatforms</key>
-	<string>MacOSX</string>
+	<string>MacOSX,iOS</string>
 	<key>PlexFrameworkVersion</key>
+<<<<<<< HEAD
 	<string>1</string>
 	<key>PlexMediaContainer</key>
 	<string>MP4</string>
+=======
+	<string>2</string>
+>>>>>>> 51b36054513ef1d79e3a7a9b587afad7f6cdf156
 	<key>PlexPluginDebug</key>
 	<string>1</string>
 	<key>PlexPluginMode</key>
