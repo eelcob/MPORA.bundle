@@ -58,10 +58,10 @@ def Search(sender, query):
 ###################################################
 def HotVideos(sender, url=MPORA_URL):
   dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
-  Log("URL:"+url)
+  #Log("URL:"+url)
   for item in HTML.ElementFromURL(url, errors='ignore').xpath('//div[@id="top10ContentContainer"]/ul/li'):
     pageUrl = item.xpath(".//a[@class='top10title']")[0].get('href')
-    Log("PageURL:"+pageUrl)
+    #Log("PageURL:"+pageUrl)
     if(pageUrl.find("http://video.mpora.com") != -1):
         VideoItemExtraction(dir, pageUrl)
   return dir
@@ -256,10 +256,10 @@ def Photos(sender, pagePath):
     if(len(item.xpath('img')) > 0):
       title = item.xpath('img')[0].get('alt')
       photoPageUrl = item.get('href')
-      Log("Photo page URL:"+photoPageUrl)
+      #Log("Photo page URL:"+photoPageUrl)
       id = photoPageUrl.replace("http://photo.mpora.com/photo/","").replace("/","")
       #id = photoPageUrl[index+1:len(photoPageUrl)]
-      Log("Photo ID:"+id)
+      #Log("Photo ID:"+id)
       photoUrl = ORIGINAL_PHOTO_URL % id
       thumb = SMALL_PHOTO_URL % id
       dir.Append(PhotoItem(photoUrl, title=title, Summary=None, thumb=thumb))
