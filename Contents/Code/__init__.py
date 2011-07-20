@@ -109,16 +109,23 @@ def PaginatedVideos(sender, pagePath, page=0, increment=20):
     url = VIDEO_MPORA_URL % pagePath 
   else:
     url = PAGED_VIDEO_MPORA_URL % (pagePath, page)
-  for item in HTML.ElementFromURL(url, errors='ignore').xpath('//div[@class="contentBox double featured"]/div/ul/li/a'):
+  for item in HTML.ElementFromURL(url, errors='ignore').xpath('//ul[contains(@class, "videoItem")]/li/a'):
     if(item.xpath('img')):
       videoUrl = item.get('href')
       VideoItemExtraction(dir, videoUrl)
-  for item in HTML.ElementFromURL(url, errors='ignore').xpath('//ul[@class="pagination"]/li/a'):
-    if(item.text.startswith('Next')):
-      dir.Append(Function(DirectoryItem(PaginatedVideos, title="More...", thumb=R(ICON)), pagePath=pagePath, page=page+increment))
-      break
+
+  # Attempt to determine the last possible page link provided by the page. We'll look at the last link and see if it has a class
+  # of 'pagination_link_current'. If this is the case, we have come to the end of all possible results, and will therefore not
+  # display a "More..." option.
+  pages = HTML.ElementFromURL(url, errors='ignore').xpath('//ul[@class="pagination"]/span/a[contains(@class,"pagination_link")]')
+  last_page_link = pages[len(pages) - 1]
+
+  if last_page_link.get('class') != "pagination_link_current":
+    dir.Append(Function(DirectoryItem(PaginatedVideos, title="More...", thumb=R(ICON)), pagePath=pagePath, page=page+increment))
+
   return dir
-  
+
+
 #############################################################################
 # TODO: add extraction of movie details, which appears different than video (URL starts with tv)
 #       The movie links don't work on the site (18/6) and don't work directly, so leave alone for
@@ -142,7 +149,7 @@ def PaginatedMovies(sender, pagePath, page=0):
 def BrandChannels(sender, pagePath):
   dir = MediaContainer(title2=sender.itemTitle)
   url = "http://mpora.com/%s/brands" % pagePath
-  for item in HTML.ElementFromURL(url, errors='ignore').xpath('//div[@class="contentBox double featured proTeam"]/div/ul/li'):
+  for item in HTML.ElementFromURL(url, errors='ignore').xpath('//div[contains(@class,"brandsContainer")]/div/ul/li'):
     if(item.xpath("a/img")):
       title = item.xpath("a/span")[0].text
       thumb = item.xpath("a/img")[0].get('src') + "#index.jpg"
