@@ -1,119 +1,137 @@
-import re, string, datetime
+import re
 
 MPORA_VIDEO_PREFIX      = "/video/mpora"
 MPORA_PHOTO_PREFIX      = "/photos/mpora"
+
+TITLE = "Mpora"
+ART = "art-default.png"
+ICON = "icon-default.png"
 
 MPORA_URL 		  = "http://mpora.com/"
 VIDEO_MPORA_URL   = "http://video.mpora.com/%s"
 PAGED_VIDEO_MPORA_URL   = "http://video.mpora.com/%s/%d"
 
-VIDEO_DETAILS = "http://api.mpora.com/tv/player/load/vid/%s"
-
 PHOTO_MPORA_URL   = "http://photo.mpora.com/%s"
-ORIGINAL_PHOTO_URL = "http://cdn1.static.mporatrons.com/photo/%s_o.jpg"
-SMALL_PHOTO_URL = "http://cdn1.static.mporatrons.com/photo/%s_t.jpg"
-CACHE_INTERVAL    = 1800
-USE_HD_PREF_KEY = "hd"
 
-ICON = "icon-default.png"
+CACHE_INTERVAL    = 1800
 
 ####################################################################################################
 def Start():
-    Plugin.AddPrefixHandler(MPORA_VIDEO_PREFIX, MainMenuVideo, "Mpora", ICON, "art-default.png")
-    Plugin.AddPrefixHandler(MPORA_PHOTO_PREFIX, MainMenuPictures, "Mpora", ICON, "art-default.png")
-    Plugin.AddViewGroup("Details", viewMode="InfoList", mediaType="items")
-    Plugin.AddViewGroup("Photos", viewMode="Pictures", mediaType="photos")
-    MediaContainer.art = R('art-default.png')
-    MediaContainer.title1 = 'Mpora'
+    Plugin.AddPrefixHandler(MPORA_VIDEO_PREFIX, MainMenuVideo, TITLE, ICON, ART)
+    Plugin.AddPrefixHandler(MPORA_PHOTO_PREFIX, MainMenuPictures, "Mpora", ICON, ART)
+    Plugin.AddViewGroup("List", viewMode="List", mediaType="items")
+    Plugin.AddViewGroup("InfoList", viewMode="InfoList", mediaType="items")
+    Plugin.AddViewGroup("Pictures", viewMode="Pictures", mediaType="photos")
+
+    ObjectContainer.art = R(ART)
+    ObjectContainer.title1 = TITLE
+    ObjectContainer.view_group = "List"
+
+    DirectoryObject.thumb = R(ICON)
+    DirectoryObject.art = R(ART)
+    VideoClipObject.thumb = R(ICON)
+    VideoClipObject.art = R(ART)
+    PhotoObject.thumb = R(ICON)
+    PhotoObject.art = R(ART)
+
     HTTP.SetCacheTime(CACHE_INTERVAL)
 
 ####################################################################################################
 def MainMenuVideo():
-    dir = MediaContainer(mediaType='video')
-    dir.Append(Function(DirectoryItem(Sports, title="Sport Channels", thumb=R(ICON))))
-    dir.Append(Function(DirectoryItem(HotVideos, title="Popular Videos", thumb=R(ICON))))
-    dir.Append(Function(DirectoryItem(PaginatedVideos, title="Featured Videos", thumb=R(ICON)), pagePath="all/featured"))
-    dir.Append(Function(DirectoryItem(PaginatedVideos, title="Recently Added", thumb=R(ICON)), pagePath="all/recent"))
-    dir.Append(Function(DirectoryItem(PaginatedVideos, title="High Def Videos", thumb=R(ICON)), pagePath="all/hd"))
-    dir.Append(Function(DirectoryItem(BrandChannels, title="Brand Channels", thumb=R(ICON)), pagePath="all"))
-    dir.Append(Function(DirectoryItem(PaginatedVideos, title="Brand Videos", thumb=R(ICON)), pagePath="all/brands"))
-    dir.Append(Function(InputDirectoryItem(Search, title=L("Search..."), prompt=L("Search for Videos"), thumb=R('search.png'))))
-    dir.Append(PrefsItem(L("Preferences..."), thumb=R('icon-prefs.png')))
-    return dir
+    
+    oc = ObjectContainer()
+    oc.add(DirectoryObject(key = Callback(Sports, title = "Sport Channels"), title = "Sport Channels"))
+    oc.add(DirectoryObject(key = Callback(HotVideos, title = "Popular Videos"), title = "Popular Videos"))
+    oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "Featured Videos", page_path = "all/featured"), title = "Featured Videos"))    
+    oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "Recently Added", page_path = "all/recent"), title = "Recently Added"))
+    oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "High Def Videos", page_path = "all/hd"), title = "High Def Videos"))
+    oc.add(DirectoryObject(key = Callback(BrandChannels, title = "Brand Channels", page_path = "all"), title = "Brand Channels"))    
+    oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "Brand Videos", page_path = "all/brands"), title = "Brand Videos")) 
+    oc.add(SearchDirectoryObject(identifier="com.plexapp.plugins.mpora", title = "Search...", prompt = "Search for Videos", thumb = R('search.png')))
+    return oc
 
 #########################################################
 def MainMenuPictures():
-    dir = MediaContainer(mediaType='pictures')
-    dir.Append(Function(DirectoryItem(Photos, title="Featured Photos"), pagePath='all/featured'))
-    dir.Append(Function(DirectoryItem(Photos, title="Popular Photos"), pagePath='all/popular'))
-    AddSportsChannels(dir, video=False)
-    return dir
-
-#######################################################################  
-def Search(sender, query):
-    pagePath = 'search/'+query+'/relevance'
-    return PaginatedVideos(sender, pagePath, increment=21)
+    
+    oc = ObjectContainer()
+    oc.add(DirectoryObject(key = Callback(Photos, title = "Featured Photos", page_path = "all/featured"), title = "Featured Photos")) 
+    oc.add(DirectoryObject(key = Callback(Photos, title = "Popular Photos", page_path = "all/popular"), title = "Popular Photos")) 
+    
+    AddSportsChannels(oc, video = False)
+    
+    return oc
 
 ###################################################
-def HotVideos(sender, url=MPORA_URL):
-    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
+def HotVideos(title, url = MPORA_URL):
+    
+    oc = ObjectContainer(view_group = "InfoList", title2 = title)
     
     for item in HTML.ElementFromURL(url, errors='ignore').xpath('//div[@id="top10ContentContainer"]/ul/li'):
-        pageUrl = item.xpath(".//a[@class='top10title']")[0].get('href')
+        page_url = item.xpath(".//a[@class='top10title']")[0].get('href')
         
         # Ensure that we filter out any results which are not from MPORA.
-        if(pageUrl.find("http://video.mpora.com") != -1):
+        if(page_url.find("http://video.mpora.com") != -1):
             
             # Extract the details from the page.
             title = item.xpath('.//span[@class="top10text"]//text()')[0].strip()
             summary = item.xpath('.//span[@class="top10vote_number"]')[0].get('title').strip()
             thumb = item.xpath('.//img')[0].get('src')
-            dir.Append(Function(VideoItem(PlayVideo, title=title, summary=summary, thumb=thumb), pageUrl=pageUrl))
+            
+            oc.add(VideoClipObject(
+                url = page_url,
+                title = title,
+                summary = summary,
+                thumb = thumb))
     
-    return dir
+    return oc
 
 ##########################################################
-def Sports(sender):
-    dir = MediaContainer(title2=sender.itemTitle)
-    AddSportsChannels(dir)
-    return dir
+def Sports(title):
+    
+    oc = ObjectContainer(title2 = title)
+    AddSportsChannels(oc)
+    return oc
 
 ##########################################################
-def AddSportsChannels(dir, video=True):
-    dir.Append(Function(DirectoryItem(SportChannel, title="MTB", thumb=R(ICON)), pagePath='mountainbiking', video=video))
-    dir.Append(Function(DirectoryItem(SportChannel, title="Snowboard", thumb=R(ICON)), pagePath='snowboarding', video=video))
-    dir.Append(Function(DirectoryItem(SportChannel, title="Surf", thumb=R(ICON)), pagePath='surfing', video=video))
-    dir.Append(Function(DirectoryItem(SportChannel, title="Skate", thumb=R(ICON)), pagePath='skateboarding', video=video))
-    dir.Append(Function(DirectoryItem(SportChannel, title="BMX", thumb=R(ICON)), pagePath='bmx', video=video))
-    dir.Append(Function(DirectoryItem(SportChannel, title="Moto", thumb=R(ICON)), pagePath='motocross', video=video))
-    dir.Append(Function(DirectoryItem(SportChannel, title="Ski", thumb=R(ICON)), pagePath='skiing', video=video))
-    dir.Append(Function(DirectoryItem(SportChannel, title="Wake", thumb=R(ICON)), pagePath='wakeboarding', video=video))
-    dir.Append(Function(DirectoryItem(SportChannel, title="Outdoor", thumb=R(ICON)), pagePath='outdoor', video=video))
+def AddSportsChannels(oc, video = True):
+    
+    oc.add(DirectoryObject(key = Callback(SportChannel, title = "MTB", page_path = "mountainbiking", video = video), title = "MTB"))
+    oc.add(DirectoryObject(key = Callback(SportChannel, title = "Snowboard", page_path = "snowboarding", video = video), title = "Snowboard"))
+    oc.add(DirectoryObject(key = Callback(SportChannel, title = "Surf", page_path = "surfing", video = video), title = "Surf"))
+    oc.add(DirectoryObject(key = Callback(SportChannel, title = "Skate", page_path = "skateboarding", video = video), title = "Skate"))  
+    oc.add(DirectoryObject(key = Callback(SportChannel, title = "BMX", page_path = "bmx", video = video), title = "BMX"))
+    oc.add(DirectoryObject(key = Callback(SportChannel, title = "Moto", page_path = "motocross", video = video), title = "Moto"))
+    oc.add(DirectoryObject(key = Callback(SportChannel, title = "Ski", page_path = "skiing", video = video), title = "Ski"))
+    oc.add(DirectoryObject(key = Callback(SportChannel, title = "Wake", page_path = "wakeboarding", video = video), title = "Wake"))
+    oc.add(DirectoryObject(key = Callback(SportChannel, title = "Outdoor", page_path = "outdoor", video = video), title = "Outdoor"))
 
 ############################################################
-def SportChannel(sender, pagePath, video=True):
-    dir = MediaContainer(title2=sender.itemTitle)
+def SportChannel(title, page_path, video = True):
+    
+    oc = ObjectContainer(title2 = title)
     if(video):
-        dir.Append(Function(DirectoryItem(HotVideos, title="Popular Videos", thumb=R(ICON)), url=MPORA_URL+pagePath))
-        dir.Append(Function(DirectoryItem(PaginatedVideos, title="Featured Videos", thumb=R(ICON)), pagePath=pagePath+"/featured"))
-        dir.Append(Function(DirectoryItem(PaginatedVideos, title="Recently Added", thumb=R(ICON)), pagePath=pagePath+"/recent"))
-        dir.Append(Function(DirectoryItem(PaginatedVideos, title="High Def Videos", thumb=R(ICON)), pagePath=pagePath+"/hd"))
-        dir.Append(Function(DirectoryItem(BrandChannels, title="Brand Channels", thumb=R(ICON)), pagePath=pagePath))
-        dir.Append(Function(DirectoryItem(PaginatedVideos, title="Brand Videos", thumb=R(ICON)), pagePath=pagePath+"/brands"))
+        oc.add(DirectoryObject(key = Callback(HotVideos, title = "Popular Videos",  url = MPORA_URL + page_path), title = "Popular Videos"))
+        oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "Featured Video",  page_path = page_path + "/featured"), title = "Featured Video"))
+        oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "Recently Added",  page_path = page_path + "/recent"), title = "Recently Added"))
+        oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "High Def Videos",  page_path = page_path + "/hd"), title = "High Def Videos"))
+        oc.add(DirectoryObject(key = Callback(BrandChannels, title = "Brand Channels",  page_path = page_path), title = "Brand Channels"))
+        oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "Brand Videos",  page_path = page_path + "/brands"), title = "Brand Videos"))
     else:
-        dir.Append(Function(DirectoryItem(Photos, title="Featured Photos"), pagePath=pagePath+"/featured"))
-        dir.Append(Function(DirectoryItem(Photos, title="Popular Photos"), pagePath=pagePath+"/popular"))
-    return dir
+        oc.add(DirectoryObject(key = Callback(Photos, title = "Featured Photos",  page_path = page_path + "/featured"), title = "Featured Photos"))
+        oc.add(DirectoryObject(key = Callback(Photos, title = "Popular Photos",  page_path = page_path + "/popular"), title = "Popular Photos"))
+
+    return oc
 
 #############################################################################
-def PaginatedVideos(sender, pagePath, page=0, increment=20):
-    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
+def PaginatedVideos(title, page_path, page = 0, increment = 20):
+    
+    oc = ObjectContainer(view_group = "InfoList", title2 = title)
     
     # Construct a suitable url, which includes the explit page number.
     if(page == 0):
-        url = VIDEO_MPORA_URL % pagePath 
+        url = VIDEO_MPORA_URL % page_path 
     else:
-        url = PAGED_VIDEO_MPORA_URL % (pagePath, page)
+        url = PAGED_VIDEO_MPORA_URL % (page_path, page)
     
     html_page = HTML.ElementFromURL(url, errors='ignore')
     for item in html_page.xpath('//ul[contains(@class, "videoItem")]'):
@@ -122,8 +140,13 @@ def PaginatedVideos(sender, pagePath, page=0, increment=20):
         title = item.xpath('.//span[@class="videoTitle"]//text()')[0].strip()
         summary = item.xpath('.//p//text()')[0].strip()
         thumb = item.xpath('.//img')[0].get('src')
-        pageUrl = item.xpath('.//a')[0].get('href')
-        dir.Append(Function(VideoItem(PlayVideo, title=title, summary=summary, thumb=thumb), pageUrl=pageUrl))
+        page_url = item.xpath('.//a')[0].get('href')
+        
+        oc.add(VideoClipObject(
+            url = page_url,
+            title = title,
+            summary = summary,
+            thumb = thumb))
     
     # Attempt to determine the last possible page link provided by the page. We'll look at the last link and see if it has a class
     # of 'pagination_link_current'. If this is the case, we have come to the end of all possible results, and will therefore not
@@ -133,18 +156,19 @@ def PaginatedVideos(sender, pagePath, page=0, increment=20):
         last_page_link = pages[len(pages) - 1]
     
         if last_page_link.get('class') != "pagination_link_current":
-            dir.Append(Function(DirectoryItem(PaginatedVideos, title="More...", thumb=R(ICON)), pagePath=pagePath, page=page+increment))
+            oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = title,  page_path = page_path, page = page + increment), title = "More..."))
 
-    if len(dir) == 0:
-        return MessageContainer(sender.itemTitle, "There are no titles available for the requested item.")
+    if len(oc) == 0:
+        return MessageContainer(title, "There are no titles available for the requested item.")
                 
-    return dir
+    return oc
 
 #########################################################
-def BrandChannels(sender, pagePath):
-    dir = MediaContainer(title2=sender.itemTitle)
+def BrandChannels(title, page_path):
     
-    url = "http://mpora.com/%s/brands" % pagePath
+    oc = ObjectContainer(title2 = title)
+    
+    url = "http://mpora.com/%s/brands" % page_path
     html_page = HTML.ElementFromURL(url, errors='ignore')
     for item in html_page.xpath('//div[contains(@class,"brandsContainer")]/div/ul/li'):
         
@@ -156,13 +180,14 @@ def BrandChannels(sender, pagePath):
             brand = item.xpath("a")[0].get('href')
             
             if title and len(title) > 0:
-                dir.Append(Function(DirectoryItem(BrandChannel, title=title, thumb=thumb), brand=brand))
+                oc.add(DirectoryObject(key = Callback(BrandChannel, title = title, brand = brand), title = title))
     
-    return dir
+    return oc
 
 ########################################################
-def BrandChannel(sender, brand, page=0):
-    dir = MediaContainer(viewGroup='Details', title2=sender.itemTitle)
+def BrandChannel(title, brand, page = 0):
+    
+    oc = ObjectContainer(view_group = "InfoList", title2 = title)
     
     if(page == 0):
         url = "http://mpora.com%svideos/" % brand
@@ -179,12 +204,16 @@ def BrandChannel(sender, brand, page=0):
             # Extract the details from the page.
             title = item.xpath('.//h3//text()')[0].strip()
             summary = item.xpath('.//p[@class="videoDescription"]//text()')[0].strip()
-            pageUrl = item.xpath('.//a')[0].get('href')
+            page_url = item.xpath('.//a')[0].get('href')
             
             thumb_style = item.xpath(".//li[@class='thumbs media']")[0].get('style')
             thumb = re.match("^background: url\((?P<image_url>.*)\)", thumb_style).groupdict()['image_url']
             
-            dir.Append(Function(VideoItem(PlayVideo, title=title, summary=summary, thumb=thumb), pageUrl=pageUrl))
+            oc.add(VideoClipObject(
+                url = page_url,
+                title = title,
+                summary = summary,
+                thumb = thumb))
     
     # Attempt to determine the last possible page link provided by the page. We'll look at the last link and see if it has a class
     # of 'pagination_link_current'. If this is the case, we have come to the end of all possible results, and will therefore not
@@ -193,50 +222,23 @@ def BrandChannel(sender, brand, page=0):
     last_page_link = pages[len(pages) - 1]
     
     if last_page_link.get('class') != "pagination_link_current":
-        dir.Append(Function(DirectoryItem(BrandChannel, title="More...", thumb=R(ICON)), brand=brand, page=page+10))
+        oc.add(DirectoryObject(key = Callback(BrandChannel, title = title, brand = brand, page = page + 10), title = "More..."))
     
-    return dir
-
-#####################################
-def PlayVideo(sender, pageUrl):
-    end = len(pageUrl)
-    
-    # If the user has set the preference to 'HD', then we must attempt to load this video type..
-    alreadyHd = pageUrl[end-4:end] == '/hd/'
-    if alreadyHd == False:
-        if (Prefs[USE_HD_PREF_KEY]):
-            pageUrl + 'hd/'
-    
-    hd = False
-    
-    if(pageUrl[end-4:end] == '/hd/'):
-        hd = True
-        end = end - 4
-    elif(pageUrl[end-1:end] == '/'):
-        end = end - 1
-    start = 1 + pageUrl.rfind("/", 0, end-1)
-    
-    key = pageUrl[start:end]
-    rssPageUrl = VIDEO_DETAILS%key
-    if(hd):
-        rssPageUrl = rssPageUrl + "/hd/true"
-    rssUrl = HTML.ElementFromURL(rssPageUrl, errors='ignore').xpath('//response/configuration/video')[0].get('url')
-    videoUrl = HTML.ElementFromURL(rssUrl, errors='ignore').xpath('//rss/channel/item/enclosure')[0].get('url')
-    return Redirect(videoUrl)
+    return oc
 
 #########################################################
-def Photos(sender, pagePath):
-    dir = MediaContainer(viewGroup='Photos', title2=sender.itemTitle)
-    url = PHOTO_MPORA_URL % pagePath
+def Photos(title, page_path):
+    
+    oc = ObjectContainer(view_group = 'Pictures', title2 = title)
+    url = PHOTO_MPORA_URL % page_path
     for item in HTML.ElementFromURL(url, errors='ignore').xpath('//div[@class="contentBox many"]//div[@class="photoItem"]/a'):
         if(len(item.xpath('img')) > 0):
             title = item.xpath('img')[0].get('alt')
-            photoPageUrl = item.get('href')
-            Log("Photo page URL:"+photoPageUrl)
-            id = photoPageUrl.replace("http://photo.mpora.com/photo/","").replace("/","")
-            #id = photoPageUrl[index+1:len(photoPageUrl)]
-            Log("Photo ID:"+id)
-            photoUrl = ORIGINAL_PHOTO_URL % id
-            thumb = SMALL_PHOTO_URL % id
-            dir.Append(PhotoItem(photoUrl, title=title, Summary=None, thumb=thumb))
-    return dir
+            thumb = item.xpath('img')[0].get('src')
+            page_url = item.get('href')
+            
+            oc.add(PhotoObject(
+                url = page_url,
+                title = title,
+                thumb = thumb))
+    return oc
