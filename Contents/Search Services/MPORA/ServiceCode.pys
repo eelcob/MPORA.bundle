@@ -1,6 +1,6 @@
 import re
 
-SEARCH_URL       = 'http://mpora.com/search/%s/relevance'
+SEARCH_URL = 'http://mpora.com/search/%s/relevance'
 
 ObjectContainer.art = R('art-default.png')
 
@@ -10,7 +10,7 @@ def Search(query):
   url = SEARCH_URL % String.Quote(query)
   search_page = HTML.ElementFromURL(url)
   search_results = search_page.xpath("//li[contains(@class, 'videoHeadline')]")
-  
+
   # Create a container to hold the results
   c = ObjectContainer()
   for item in search_results:
@@ -31,5 +31,5 @@ def Search(query):
 
     except:
       Log.Exception("Exception adding video result")
-      
+
   return c
