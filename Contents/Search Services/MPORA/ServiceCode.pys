@@ -2,6 +2,8 @@ import re
 
 SEARCH_URL       = 'http://mpora.com/search/%s/relevance'
 
+ObjectContainer.art = R('art-default.png')
+
 def Search(query):
 
   # Compute the URL and download the HTML

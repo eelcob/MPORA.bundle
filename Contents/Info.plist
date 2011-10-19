@@ -37,7 +37,7 @@
 	<key>PlexSearchServices</key>
 	<dict>
 	   <key>MPORA</key>
-	   <string>com.plexapp.search.mpora</string>
+	   <string>com.plexapp.plugins.mpora</string>
 	</dict>
 </dict>
 </plist>

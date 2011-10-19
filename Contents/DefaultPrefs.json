@@ -1,8 +1,0 @@
-[
-  {
-    "id":"hd",
-    "type":"bool",
-    "label":"Display in High Def if available",
-    "default":"true"
-  }
-]
