@@ -231,7 +231,12 @@ def Photos(title, page_path):
     url = PHOTO_MPORA_URL % page_path
     for item in HTML.ElementFromURL(url, errors='ignore').xpath('//div[@class="contentBox many"]//div[@class="photoItem"]/a'):
         if(len(item.xpath('img')) > 0):
+
+            # It appears that some photos are uploaded without an actual title.
             title = item.xpath('img')[0].get('alt')
+            if title == None:
+                title = "Photo"
+
             thumb = item.xpath('img')[0].get('src')
             page_url = item.get('href')
 
