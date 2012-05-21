@@ -1,5 +1,3 @@
-import re
-
 MPORA_VIDEO_PREFIX = "/video/mpora"
 MPORA_PHOTO_PREFIX = "/photos/mpora"
 
@@ -11,6 +9,8 @@ MPORA_URL = "http://mpora.com/"
 VIDEO_MPORA_URL = "http://video.mpora.com/%s"
 PAGED_VIDEO_MPORA_URL = "http://video.mpora.com/%s/%d"
 PHOTO_MPORA_URL = "http://photo.mpora.com/%s"
+
+RE_IMAGE = Regex("^background: url\((?P<image_url>.*)\)")
 
 ####################################################################################################
 def Start():
@@ -29,7 +29,6 @@ def Start():
     VideoClipObject.thumb = R(ICON)
     VideoClipObject.art = R(ART)
     PhotoObject.thumb = R(ICON)
-    PhotoObject.art = R(ART)
 
     HTTP.CacheTime = 1800
 
@@ -204,7 +203,7 @@ def BrandChannel(title, brand, page = 0):
             page_url = item.xpath('.//a')[0].get('href')
 
             thumb_style = item.xpath(".//li[@class='thumbs media']")[0].get('style')
-            thumb = re.match("^background: url\((?P<image_url>.*)\)", thumb_style).groupdict()['image_url']
+            thumb = RE_IMAGE.match(thumb_style).group('image_url')
 
             oc.add(VideoClipObject(
                 url = page_url,
