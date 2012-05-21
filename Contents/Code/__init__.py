@@ -216,10 +216,11 @@ def BrandChannel(title, brand, page = 0):
     # of 'pagination_link_current'. If this is the case, we have come to the end of all possible results, and will therefore not
     # display a "More..." option.
     pages = html_page.xpath('//ul[@class="pagination"]/span/a[contains(@class,"pagination_link")]')
-    last_page_link = pages[len(pages) - 1]
+    if len(pages) > 0:
+        last_page_link = pages[len(pages) - 1]
 
-    if last_page_link.get('class') != "pagination_link_current":
-        oc.add(DirectoryObject(key = Callback(BrandChannel, title = title, brand = brand, page = page + 10), title = "More..."))
+        if last_page_link.get('class') != "pagination_link_current":
+            oc.add(DirectoryObject(key = Callback(BrandChannel, title = title, brand = brand, page = page + 10), title = "More..."))
 
     return oc
 
@@ -230,7 +231,12 @@ def Photos(title, page_path):
     url = PHOTO_MPORA_URL % page_path
     for item in HTML.ElementFromURL(url, errors='ignore').xpath('//div[@class="contentBox many"]//div[@class="photoItem"]/a'):
         if(len(item.xpath('img')) > 0):
+
+            # It appears that some photos are uploaded without an actual title.
             title = item.xpath('img')[0].get('alt')
+            if title == None:
+                title = "Photo"
+
             thumb = item.xpath('img')[0].get('src')
             page_url = item.get('href')
 
