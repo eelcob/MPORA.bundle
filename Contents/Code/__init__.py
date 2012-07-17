@@ -6,13 +6,9 @@ ART = "art-default.png"
 ICON = "icon-default.png"
 
 MPORA_URL = "http://mpora.com"
-BRAND_URL = MPORA_URL + "/brands/"
-VIDEO_MPORA_URL = "http://mpora.com/%s"
-PAGED_VIDEO_MPORA_URL = "http://mpora.com/%s%s%d"
-BRAND_MPORA_URL = "http://mpora.com/%s%s%d"
-PHOTO_MPORA_URL = "http://photo.mpora.com/%s"
-
-RE_IMAGE = Regex("^background: url\((?P<image_url>.*)\)")
+VIDEO_MPORA_URL = "http://mpora.com%s%s%d"
+BRAND_MPORA_URL = "http://mpora.com%s%s%d"
+PHOTO_MPORA_URL = "http://mpora.com%s%s%d"
 
 ####################################################################################################
 def Start():
@@ -42,8 +38,7 @@ def MainMenuVideo():
     oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "Featured Videos", page_path = "/videos"), title = "Featured Videos"))    
     oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "Recently Added", page_path = "/videos/recent"), title = "Recently Added"))
     oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "High Def Videos", page_path = "/videos/hd"), title = "High Def Videos"))
-    oc.add(DirectoryObject(key = Callback(BrandChannels, title = "Brand Channels"), title = "Brand Channels"))    
-    #oc.add(DirectoryObject(key = Callback(BrandChannels, title = "Brand Channels", page_path = "/videos"), title = "Brand Channels"))    
+    oc.add(DirectoryObject(key = Callback(BrandChannels, title = "Brand Channels",  page_path = "/brands"), title = "Brand Channels"))    
     oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "Brand Videos", page_path = "/videos/brands"), title = "Brand Videos")) 
     oc.add(SearchDirectoryObject(identifier="com.plexapp.plugins.mpora", title = "Search...", prompt = "Search for Videos", thumb = R('search.png')))
     return oc
@@ -52,8 +47,8 @@ def MainMenuVideo():
 def MainMenuPictures():
 
     oc = ObjectContainer()
-    oc.add(DirectoryObject(key = Callback(Photos, title = "Featured Photos", page_path = "/all/featured"), title = "Featured Photos")) 
-    oc.add(DirectoryObject(key = Callback(Photos, title = "Popular Photos", page_path = "/all/popular"), title = "Popular Photos")) 
+    oc.add(DirectoryObject(key = Callback(Photos, title = "Featured Photos", page_path = "/photos"), title = "Featured Photos")) 
+    oc.add(DirectoryObject(key = Callback(Photos, title = "Recently Added", page_path = "/photos/recent"), title = "Recently Added")) 
 
     AddSportsChannels(oc, video = False)
 
@@ -87,12 +82,11 @@ def SportChannel(title, page_path, video = True):
         oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "Featured Video",  page_path = page_path + "/videos"), title = "Featured Video"))
         oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "Recently Added",  page_path = page_path + "/videos/recent"), title = "Recently Added"))
         oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "High Def Videos",  page_path = page_path + "/videos/hd"), title = "High Def Videos"))
-        oc.add(DirectoryObject(key = Callback(BrandChannels, title = "Brand Channels"), title = "Brand Channels"))
-        #oc.add(DirectoryObject(key = Callback(BrandChannels, title = "Brand Channels",  page_path = page_path), title = "Brand Channels"))
+        oc.add(DirectoryObject(key = Callback(BrandChannels, title = "Brand Channels", page_path = page_path + "/brands"), title = "Brand Channels"))
         oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "Brand Videos",  page_path = page_path + "/videos/brands"), title = "Brand Videos"))
     else:
-        oc.add(DirectoryObject(key = Callback(Photos, title = "Featured Photos",  page_path = page_path + "/featured"), title = "Featured Photos"))
-        oc.add(DirectoryObject(key = Callback(Photos, title = "Popular Photos",  page_path = page_path + "/popular"), title = "Popular Photos"))
+        oc.add(DirectoryObject(key = Callback(Photos, title = "Featured Photos",  page_path = page_path + "/photos"), title = "Featured Photos"))
+        oc.add(DirectoryObject(key = Callback(Photos, title = "Recently Added",  page_path = page_path + "/photos/recent"), title = "Recently Added"))
 
     return oc
 
@@ -101,7 +95,7 @@ def PaginatedVideos(title, page_path, page = 1):
 
 	oc = ObjectContainer(view_group = "InfoList", title2 = title)
 
-	url = PAGED_VIDEO_MPORA_URL % (page_path, "?page=" , page)
+	url = VIDEO_MPORA_URL % (page_path, "?page=" , page)
 
 	html_page = HTML.ElementFromURL(url, errors='ignore')
 	
@@ -125,11 +119,13 @@ def PaginatedVideos(title, page_path, page = 1):
 	return oc
 
 #########################################################
-def BrandChannels(title, page = 1):
+def BrandChannels(title, page_path, page = 1):
 
+	Log.Debug(page_path)
 	oc = ObjectContainer(title2 = title)
 
-	html_page = HTML.ElementFromURL(BRAND_URL, errors='ignore')
+	url = MPORA_URL + page_path
+	html_page = HTML.ElementFromURL(url, errors='ignore')
 
 	for item in html_page.xpath("//ul[@class='brands']/li/a"):
 		title = item.xpath(".//h3")[0].text
@@ -170,23 +166,35 @@ def BrandChannel(title, brand, page = 1):
 	return oc
 
 #########################################################
-def Photos(title, page_path):
+def Photos(title, page_path, page = 1):
+#http://mpora.com/snowboarding/photos
 
-    oc = ObjectContainer(view_group = 'Pictures', title2 = title)
-    url = PHOTO_MPORA_URL % page_path
-    for item in HTML.ElementFromURL(url, errors='ignore').xpath('//div[@class="contentBox many"]//div[@class="photoItem"]/a'):
-        if(len(item.xpath('img')) > 0):
+	oc = ObjectContainer(view_group = 'Pictures', title2 = title)
+
+	url = PHOTO_MPORA_URL % (page_path, "?page=", page)
+	html_page = HTML.ElementFromURL(url, errors='ignore', timeout=20)
+    
+	for item in html_page.xpath('//a[@class="photo-thumbnail small"]'):
+		if(len(item.xpath('./div/img')) > 0):
 
             # It appears that some photos are uploaded without an actual title.
-            title = item.xpath('img')[0].get('alt')
-            if title == None:
-                title = "Photo"
+			title = item.xpath('./div/img')[0].get('alt')
+			if title == None:
+				title = "Photo"
 
-            thumb = item.xpath('img')[0].get('src')
-            page_url = item.get('href')
+			thumb = item.xpath('./div/img')[0].get('src')
+			page_url = MPORA_URL + item.get('href')
 
-            oc.add(PhotoObject(
-                url = page_url,
-                title = title,
-                thumb = thumb))
-    return oc
+			oc.add(PhotoObject(
+				url = page_url,
+				title = title,
+				thumb = thumb))
+				
+	pages = html_page.xpath("//a[@class='next_page']")
+	if len(pages) > 0:
+		oc.add(DirectoryObject(key = Callback(Photos, title = title,  page_path = page_path, page = page + 1), title = "More..."))
+
+	if len(oc) == 0:
+		return MessageContainer(title, "There are no titles available for the requested item.")			
+    
+	return oc
