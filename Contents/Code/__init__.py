@@ -154,7 +154,7 @@ def BrandChannel(title, brand, page = 1):
 		oc.add(VideoClipObject(
 			url = page_url,
 			title = clip_title,
-			thumb = thumb))
+			thumb = Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
 			
 	pages = html_page.xpath("//a[@class='next_page']")
 	if len(pages) > 0:
@@ -188,7 +188,7 @@ def Photos(title, page_path, page = 1):
 			oc.add(PhotoObject(
 				url = page_url,
 				title = title,
-				thumb = thumb))
+				thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
 				
 	pages = html_page.xpath("//a[@class='next_page']")
 	if len(pages) > 0:
