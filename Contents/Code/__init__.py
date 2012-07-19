@@ -2,7 +2,7 @@ MPORA_VIDEO_PREFIX = "/video/mpora"
 MPORA_PHOTO_PREFIX = "/photos/mpora"
 
 TITLE = "Mpora"
-ART = "art-default.png"
+ART = "art-default.jpg"
 ICON = "icon-default.png"
 
 MPORA_URL = "http://mpora.com"
@@ -12,6 +12,7 @@ PHOTO_MPORA_URL = "http://mpora.com%s%s%d"
 
 ####################################################################################################
 def Start():
+
     Plugin.AddPrefixHandler(MPORA_VIDEO_PREFIX, MainMenuVideo, TITLE, ICON, ART)
     Plugin.AddPrefixHandler(MPORA_PHOTO_PREFIX, MainMenuPictures, "Mpora", ICON, ART)
     Plugin.AddViewGroup("List", viewMode="List", mediaType="items")
@@ -28,11 +29,11 @@ def Start():
     VideoClipObject.art = R(ART)
     PhotoObject.thumb = R(ICON)
 
-    HTTP.CacheTime = 1800
+    HTTP.CacheTime = CACHE_1HOUR
 
 ####################################################################################################
 def MainMenuVideo():
-    
+
     oc = ObjectContainer()
     oc.add(DirectoryObject(key = Callback(Sports, title = "Sport Channels"), title = "Sport Channels"))
     oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "Featured Videos", page_path = "/videos"), title = "Featured Videos"))    
@@ -40,10 +41,10 @@ def MainMenuVideo():
     oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "High Def Videos", page_path = "/videos/hd"), title = "High Def Videos"))
     oc.add(DirectoryObject(key = Callback(BrandChannels, title = "Brand Channels",  page_path = "/brands"), title = "Brand Channels"))    
     oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "Brand Videos", page_path = "/videos/brands"), title = "Brand Videos")) 
-    oc.add(SearchDirectoryObject(identifier="com.plexapp.plugins.mpora", title = "Search...", prompt = "Search for Videos", thumb = R('search.png')))
+    oc.add(SearchDirectoryObject(identifier="com.plexapp.plugins.mpora", title = "Search...", prompt = "Search for Videos", thumb = R('icon-search.png')))
     return oc
 
-#########################################################
+####################################################################################################
 def MainMenuPictures():
 
     oc = ObjectContainer()
@@ -54,14 +55,14 @@ def MainMenuPictures():
 
     return oc
 
-##########################################################
+####################################################################################################
 def Sports(title):
 
     oc = ObjectContainer(title2 = title)
     AddSportsChannels(oc)
     return oc
 
-##########################################################
+####################################################################################################
 def AddSportsChannels(oc, video = True):
 
     oc.add(DirectoryObject(key = Callback(SportChannel, title = "MTB", page_path = "/mountainbiking", video = video), title = "MTB"))
@@ -74,10 +75,11 @@ def AddSportsChannels(oc, video = True):
     oc.add(DirectoryObject(key = Callback(SportChannel, title = "Wake", page_path = "/wakeboarding", video = video), title = "Wake"))
     oc.add(DirectoryObject(key = Callback(SportChannel, title = "Outdoor", page_path = "/outdoor", video = video), title = "Outdoor"))
 
-############################################################
+####################################################################################################
 def SportChannel(title, page_path, video = True):
 
     oc = ObjectContainer(title2 = title)
+
     if(video):
         oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "Featured Video",  page_path = page_path + "/videos"), title = "Featured Video"))
         oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = "Recently Added",  page_path = page_path + "/videos/recent"), title = "Recently Added"))
@@ -90,7 +92,7 @@ def SportChannel(title, page_path, video = True):
 
     return oc
 
-#############################################################################
+####################################################################################################
 def PaginatedVideos(title, page_path, page = 1):
 
 	oc = ObjectContainer(view_group = "InfoList", title2 = title)
@@ -98,7 +100,7 @@ def PaginatedVideos(title, page_path, page = 1):
 	url = VIDEO_MPORA_URL % (page_path, "?page=" , page)
 
 	html_page = HTML.ElementFromURL(url, errors='ignore')
-	
+
 	for item in html_page.xpath('//a[contains(@class, "video-thumbnail")]'):
 		clip_title = item.xpath('.//h6')[0].text
 		thumb = item.xpath('.//div/img')[0].get('src')
@@ -107,9 +109,11 @@ def PaginatedVideos(title, page_path, page = 1):
 		oc.add(VideoClipObject(
 			url = page_url,
 			title = clip_title,
-			thumb = thumb))
+			thumb = thumb
+		))
 
 	pages = html_page.xpath("//a[@class='next_page']")
+
 	if len(pages) > 0:
 		oc.add(DirectoryObject(key = Callback(PaginatedVideos, title = title,  page_path = page_path, page = page + 1), title = "More..."))
 
@@ -118,7 +122,7 @@ def PaginatedVideos(title, page_path, page = 1):
 
 	return oc
 
-#########################################################
+####################################################################################################
 def BrandChannels(title, page_path, page = 1):
 
 	Log.Debug(page_path)
@@ -131,20 +135,18 @@ def BrandChannels(title, page_path, page = 1):
 		title = item.xpath(".//h3")[0].text
 		thumb = item.xpath(".//img")[0].get('src')
 		brand = item.xpath(".")[0].get('href')
-		
-		oc.add(DirectoryObject(key = Callback(BrandChannel, title = title, brand = brand), title = title, thumb=thumb))
 
+		oc.add(DirectoryObject(key = Callback(BrandChannel, title = title, brand = brand), title = title, thumb=thumb))
 
 	return oc
 
-########################################################
+####################################################################################################
 def BrandChannel(title, brand, page = 1):
-	
+
 	oc = ObjectContainer(view_group = "InfoList", title2 = title)
-	
+
 	url = BRAND_MPORA_URL % (brand, "/videos?page=", page)
 	html_page = HTML.ElementFromURL(url, errors='ignore', timeout=20)
-
 
 	for item in html_page.xpath('//a[contains(@class, "video-thumbnail")]'):
 		clip_title = item.xpath('.//h6')[0].text
@@ -154,18 +156,20 @@ def BrandChannel(title, brand, page = 1):
 		oc.add(VideoClipObject(
 			url = page_url,
 			title = clip_title,
-			thumb = Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
-			
+			thumb = Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)
+		))
+
 	pages = html_page.xpath("//a[@class='next_page']")
+
 	if len(pages) > 0:
 		oc.add(DirectoryObject(key = Callback(BrandChannel, title = title,  brand = brand, page = page + 1), title = "More..."))
 
 	if len(oc) == 0:
 		return MessageContainer(title, "There are no titles available for the requested item.")	
-			
+
 	return oc
 
-#########################################################
+####################################################################################################
 def Photos(title, page_path, page = 1):
 #http://mpora.com/snowboarding/photos
 
@@ -173,7 +177,7 @@ def Photos(title, page_path, page = 1):
 
 	url = PHOTO_MPORA_URL % (page_path, "?page=", page)
 	html_page = HTML.ElementFromURL(url, errors='ignore', timeout=20)
-    
+
 	for item in html_page.xpath('//a[@class="photo-thumbnail small"]'):
 		if(len(item.xpath('./div/img')) > 0):
 
@@ -188,13 +192,15 @@ def Photos(title, page_path, page = 1):
 			oc.add(PhotoObject(
 				url = page_url,
 				title = title,
-				thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)))
-				
+				thumb=Resource.ContentsOfURLWithFallback(url=thumb, fallback=ICON)
+			))
+
 	pages = html_page.xpath("//a[@class='next_page']")
+
 	if len(pages) > 0:
 		oc.add(DirectoryObject(key = Callback(Photos, title = title,  page_path = page_path, page = page + 1), title = "More..."))
 
 	if len(oc) == 0:
 		return MessageContainer(title, "There are no titles available for the requested item.")			
-    
+
 	return oc
